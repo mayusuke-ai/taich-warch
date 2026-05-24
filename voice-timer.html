@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>音声タイマー</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --accent: #00ffc8;
+    --accent2: #ff4d6d;
+    --text: #e8e8f0;
+    --muted: #44445a;
+    --glow: rgba(0,255,200,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .container {
+    width: min(420px, 95vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* title */
+  .title {
+    font-size: 13px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  /* main clock display */
+  .clock-wrap {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clock-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .clock-ring.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 30px var(--glow), inset 0 0 30px rgba(0,255,200,0.05);
+    animation: pulse-ring 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 20px var(--glow), inset 0 0 20px rgba(0,255,200,0.05); }
+    50%       { box-shadow: 0 0 50px var(--glow), inset 0 0 40px rgba(0,255,200,0.1); }
+  }
+
+  .clock-ring-inner {
+    position: absolute;
+    inset: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .time-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 52px;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,255,200,0.5);
+    transition: color 0.3s, text-shadow 0.3s;
+    z-index: 1;
+    line-height: 1;
+  }
+
+  .time-display.stopped {
+    color: var(--accent2);
+    text-shadow: 0 0 20px rgba(255,77,109,0.5);
+  }
+
+  .ms-display {
+    position: absolute;
+    bottom: 56px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    transition: color 0.3s;
+  }
+
+  .ms-display.active { color: var(--accent); opacity: 0.7; }
+
+  /* status pill */
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-radius: 99px;
+    border: 1px solid var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    transition: all 0.3s;
+    min-width: 180px;
+    justify-content: center;
+  }
+
+  .status-pill.listening {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,255,200,0.06);
+  }
+
+  .status-pill.running {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,255,200,0.06);
+  }
+
+  .status-pill.stopped {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(255,77,109,0.06);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .dot.blink {
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  /* keyword guide */
+  .keywords {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .kw-card {
+    flex: 1;
+    max-width: 160px;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: center;
+  }
+
+  .kw-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 6px;
+  }
+
+  .kw-word {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .kw-word.start { color: var(--accent); }
+  .kw-word.stop  { color: var(--accent2); }
+
+  /* mic button */
+  .mic-btn {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+  }
+
+  .mic-btn:active { transform: scale(0.92); }
+
+  .mic-btn.on {
+    border-color: var(--accent);
+    background: rgba(0,255,200,0.08);
+    box-shadow: 0 0 20px var(--glow);
+  }
+
+  .mic-btn svg {
+    width: 28px;
+    height: 28px;
+    fill: var(--muted);
+    transition: fill 0.2s;
+  }
+
+  .mic-btn.on svg { fill: var(--accent); }
+
+  /* records */
+  .records-wrap {
+    width: 100%;
+  }
+
+  .records-title {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+    animation: slide-in 0.3s ease;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .record-num {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    min-width: 24px;
+  }
+
+  .record-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px;
+    color: var(--accent);
+  }
+
+  .record-clear {
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.1em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.2s;
+    text-align: center;
+    margin-top: 6px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .record-clear:hover { color: var(--accent2); }
+
+  /* transcript debug */
+  .heard {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    min-height: 16px;
+    text-align: center;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+  }
+
+  /* no-support warning */
+  .warn {
+    color: var(--accent2);
+    font-size: 13px;
+    text-align: center;
+    padding: 20px;
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 12px;
+    background: rgba(255,77,109,0.05);
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="title">Voice Timer</div>
+
+  <div class="clock-wrap">
+    <div class="clock-ring" id="ring"></div>
+    <div class="clock-ring-inner"></div>
+    <div class="time-display" id="timeDisplay">00:00</div>
+    <div class="ms-display" id="msDisplay">.000</div>
+  </div>
+
+  <div class="status-pill" id="statusPill">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">待機中</span>
+  </div>
+
+  <div class="keywords">
+    <div class="kw-card">
+      <div class="kw-label">スタート</div>
+      <div class="kw-word start">チー</div>
+    </div>
+    <div class="kw-card">
+      <div class="kw-label">ストップ</div>
+      <div class="kw-word stop">レイ</div>
+    </div>
+  </div>
+
+  <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="マイクON/OFF">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
+    </svg>
+  </button>
+
+  <div class="heard" id="heardText">——</div>
+
+  <div class="records-wrap" id="recordsWrap" style="display:none">
+    <div class="records-title">計測履歴</div>
+    <div class="records-list" id="recordsList"></div>
+    <div class="record-clear" onclick="clearRecords()">クリア</div>
+  </div>
+
+  <div class="warn" id="warnMsg" style="display:none">
+    お使いのブラウザは音声認識に対応していません。<br>
+    Android Chrome をお試しください。
+  </div>
+
+</div>
+
+<script>
+  // ---- state ----
+  let recognition = null;
+  let micOn       = false;
+  let running     = false;
+  let startTime   = 0;
+  let elapsed     = 0;
+  let rafId       = null;
+  let records     = [];
+
+  // ---- DOM ----
+  const timeDisplay = document.getElementById('timeDisplay');
+  const msDisplay   = document.getElementById('msDisplay');
+  const statusPill  = document.getElementById('statusPill');
+  const statusDot   = document.getElementById('statusDot');
+  const statusText  = document.getElementById('statusText');
+  const micBtn      = document.getElementById('micBtn');
+  const ring        = document.getElementById('ring');
+  const heardText   = document.getElementById('heardText');
+  const recordsWrap = document.getElementById('recordsWrap');
+  const recordsList = document.getElementById('recordsList');
+  const warnMsg     = document.getElementById('warnMsg');
+
+  // ---- speech API support check ----
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    warnMsg.style.display = 'block';
+    micBtn.style.display  = 'none';
+  }
+
+  // ---- mic toggle ----
+  function toggleMic() {
+    if (!SpeechRecognition) return;
+    micOn ? stopMic() : startMic();
+  }
+
+  function startMic() {
+    if (recognition) recognition.abort();
+    recognition = new SpeechRecognition();
+    recognition.lang        = 'ja-JP';
+    recognition.continuous  = true;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => {
+      micOn = true;
+      micBtn.classList.add('on');
+      setStatus('listening', '音声待機中', true);
+    };
+
+    recognition.onresult = (e) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      transcript = transcript.trim();
+      heardText.textContent = transcript || '——';
+
+      const t = transcript.replace(/\s/g, '');
+
+      // --- keyword match ---
+      // START: チー / ちー / 知― / ち / チ etc.
+      const startWords = ['チー','ちー','チ','ち','チ―','ちー','チイ','ちい','chy','chi','start','スタート'];
+      const stopWords  = ['レイ','れい','零','例','礼','霊','0','ゼロ','ぜろ','stop','ストップ'];
+
+      if (!running && startWords.some(w => t.includes(w))) {
+        startTimer();
+      } else if (running && stopWords.some(w => t.includes(w))) {
+        stopTimer();
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('Speech error:', e.error);
+      if (e.error === 'not-allowed') {
+        setStatus('', 'マイク許可が必要です', false);
+        micOn = false;
+        micBtn.classList.remove('on');
+      }
+    };
+
+    recognition.onend = () => {
+      // auto-restart to keep listening
+      if (micOn) {
+        try { recognition.start(); } catch(err) {}
+      }
+    };
+
+    recognition.start();
+  }
+
+  function stopMic() {
+    micOn = false;
+    micBtn.classList.remove('on');
+    if (recognition) { recognition.abort(); recognition = null; }
+    if (!running) setStatus('', '待機中', false);
+    heardText.textContent = '——';
+  }
+
+  // ---- timer ----
+  function startTimer() {
+    if (running) return;
+    running   = true;
+    startTime = performance.now() - elapsed;
+    ring.classList.add('active');
+    timeDisplay.classList.remove('stopped');
+    setStatus('running', '計測中', true);
+    tick();
+  }
+
+  function stopTimer() {
+    if (!running) return;
+    running  = false;
+    elapsed  = performance.now() - startTime;
+    cancelAnimationFrame(rafId);
+    ring.classList.remove('active');
+    timeDisplay.classList.add('stopped');
+    setStatus('stopped', '計測完了', false);
+    addRecord(elapsed);
+  }
+
+  function tick() {
+    if (!running) return;
+    elapsed = performance.now() - startTime;
+    renderTime(elapsed);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function renderTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const min      = Math.floor(totalSec / 60);
+    const sec      = totalSec % 60;
+    const msPart   = Math.floor(ms % 1000);
+    timeDisplay.textContent = `${pad(min)}:${pad(sec)}`;
+    msDisplay.textContent   = `.${String(msPart).padStart(3, '0')}`;
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  // ---- records ----
+  function addRecord(ms) {
+    records.push(ms);
+    renderRecords();
+    recordsWrap.style.display = 'block';
+  }
+
+  function renderRecords() {
+    recordsList.innerHTML = '';
+    [...records].reverse().forEach((ms, i) => {
+      const totalSec = Math.floor(ms / 1000);
+      const min      = Math.floor(totalSec / 60);
+      const sec      = totalSec % 60;
+      const msPart   = Math.floor(ms % 1000);
+      const item = document.createElement('div');
+      item.className = 'record-item';
+      item.innerHTML = `
+        <span class="record-num">#${records.length - i}</span>
+        <span class="record-time">${pad(min)}:${pad(sec)}.${String(msPart).padStart(3,'0')}</span>
+      `;
+      recordsList.appendChild(item);
+    });
+  }
+
+  function clearRecords() {
+    records = [];
+    recordsList.innerHTML = '';
+    recordsWrap.style.display = 'none';
+    elapsed = 0;
+    renderTime(0);
+    timeDisplay.classList.remove('stopped');
+    setStatus('', micOn ? '音声待機中' : '待機中', micOn);
+  }
+
+  // ---- status ----
+  function setStatus(type, text, blink) {
+    statusPill.className = 'status-pill' + (type ? ' ' + type : '');
+    statusText.textContent = text;
+    statusDot.className = 'dot' + (blink ? ' blink' : '');
+    if (type === 'running') msDisplay.classList.add('active');
+    else msDisplay.classList.remove('active');
+  }
+
+  // init display
+  renderTime(0);
+</script>
+</body>
+</html>
