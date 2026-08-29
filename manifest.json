@@ -1,0 +1,13 @@
+{
+  "name": "陳式太極研究会練習用",
+  "short_name": "太極練習",
+  "start_url": "./taichi_practice_app.html",
+  "display": "standalone",
+  "background_color": "#FFEAF1",
+  "theme_color": "#FFEAF1",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

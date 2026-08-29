@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>陳式太極研究会練習用</title>
+
+<!-- ホーム画面に追加した時、アプリらしく表示するための設定 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FFEAF1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="太極練習">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink-light:#FFEAF1;
+    --pink-mid:#FFC9DD;
+    --pink-deep:#E8749A;
+    --pink-deep-dark:#D45F86;
+    --silver:#C9CED6;
+    --silver-light:#EEF0F3;
+    --white:#FFFFFF;
+    --ink:#4A4550;
+    --ink-soft:#8B8894;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0;
+    min-height:100vh;
+    font-family:'Noto Sans JP', sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 15% 0%, var(--pink-light) 0%, transparent 55%),
+      radial-gradient(circle at 100% 100%, var(--silver-light) 0%, transparent 55%),
+      var(--white);
+  }
+
+  .wrap{
+    max-width:520px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+
+  /* ---- Header ---- */
+  header{
+    text-align:center;
+    margin-bottom:26px;
+    position:relative;
+  }
+
+  .taiji{
+    width:46px; height:46px;
+    margin:0 auto 10px;
+    border-radius:50%;
+    background:
+      conic-gradient(from 0deg,
+        var(--pink-deep) 0deg 180deg,
+        var(--silver) 180deg 360deg);
+    position:relative;
+    box-shadow:0 4px 14px rgba(232,116,154,0.35);
+  }
+  .taiji::before, .taiji::after{
+    content:"";
+    position:absolute;
+    width:23px; height:23px;
+    border-radius:50%;
+    left:50%;
+    transform:translateX(-50%);
+  }
+  .taiji::before{ top:0; background:var(--pink-deep); }
+  .taiji::after{ bottom:0; background:var(--silver); }
+
+  h1{
+    font-family:'Noto Serif JP', serif;
+    font-weight:700;
+    font-size:1.5rem;
+    letter-spacing:0.04em;
+    margin:0;
+    color:var(--ink);
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:0.8rem;
+    letter-spacing:0.12em;
+    color:var(--ink-soft);
+  }
+
+  /* ---- Tiles ---- */
+  .tile{
+    background:var(--white);
+    border-radius:26px;
+    padding:24px 22px 26px;
+    margin-bottom:22px;
+    box-shadow:
+      0 10px 30px rgba(180,150,170,0.16),
+      0 0 0 1px rgba(255,255,255,0.6) inset;
+    border:1px solid var(--silver-light);
+    position:relative;
+    overflow:hidden;
+  }
+  .tile::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height:5px;
+    background:linear-gradient(90deg, var(--pink-mid), var(--silver));
+  }
+
+  .tile-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .tile-num{
+    width:30px;height:30px;
+    border-radius:50%;
+    background:var(--pink-light);
+    color:var(--pink-deep-dark);
+    font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.95rem;
+  }
+  .tile-title{
+    font-weight:700;
+    font-size:1.05rem;
+    color:var(--ink);
+  }
+
+  /* ---- Tile 1: song list ---- */
+  .song-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .song-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px 18px;
+    border-radius:18px;
+    border:2px solid var(--silver-light);
+    background:var(--silver-light);
+    cursor:pointer;
+    transition:all .15s ease;
+    user-select:none;
+  }
+  .song-item:active{ transform:scale(0.98); }
+  .song-item.selected{
+    border-color:var(--pink-deep);
+    background:linear-gradient(135deg, var(--pink-light), #FFF);
+    box-shadow:0 6px 16px rgba(232,116,154,0.22);
+  }
+  .song-radio{
+    width:22px; height:22px;
+    border-radius:50%;
+    border:2px solid var(--silver);
+    flex:0 0 auto;
+    position:relative;
+    background:var(--white);
+  }
+  .song-item.selected .song-radio{ border-color:var(--pink-deep); }
+  .song-item.selected .song-radio::after{
+    content:"";
+    position:absolute;
+    inset:3px;
+    border-radius:50%;
+    background:var(--pink-deep);
+  }
+  .song-name{
+    font-size:1.15rem;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .song-status{
+    margin-top:14px;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    text-align:center;
+    min-height:1.2em;
+  }
+
+  /* ---- Tile 2: stopwatch ---- */
+  .timer-display{
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+    font-size:3.6rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+    color:var(--ink);
+    margin:6px 0 20px;
+    font-family:'Noto Sans JP', sans-serif;
+  }
+  .timer-display.running{ color:var(--pink-deep-dark); }
+
+  .btn-row{
+    display:flex;
+    gap:16px;
+  }
+  .big-btn{
+    flex:1;
+    padding:22px 10px;
+    border:none;
+    border-radius:20px;
+    font-size:1.3rem;
+    font-weight:700;
+    letter-spacing:0.05em;
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .1s ease, opacity .2s ease;
+    color:var(--white);
+  }
+  .big-btn:active{ transform:scale(0.96); }
+  .btn-start{
+    background:linear-gradient(135deg, var(--pink-deep), var(--pink-deep-dark));
+    box-shadow:0 8px 18px rgba(212,95,134,0.35);
+  }
+  .btn-stop{
+    background:linear-gradient(135deg, #A9AFB9, #8E94A0);
+    box-shadow:0 8px 18px rgba(140,145,155,0.3);
+  }
+  .big-btn:disabled{
+    opacity:0.45;
+    box-shadow:none;
+    cursor:not-allowed;
+  }
+
+  .now-playing{
+    margin-top:18px;
+    text-align:center;
+    font-size:0.95rem;
+    color:var(--ink-soft);
+    background:var(--silver-light);
+    border-radius:14px;
+    padding:10px 12px;
+  }
+  .now-playing strong{ color:var(--pink-deep-dark); }
+
+  footer{
+    text-align:center;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    letter-spacing:0.08em;
+    margin-top:10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="taiji"></div>
+    <h1>陳式太極研究会練習用</h1>
+    <p>CHEN STYLE TAICHI PRACTICE</p>
+  </header>
+
+  <!-- タイル①：曲目選択 -->
+  <section class="tile">
+    <div class="tile-label">
+      <div class="tile-num">1</div>
+      <div class="tile-title">曲目を選ぶ</div>
+    </div>
+    <div class="song-list" id="songList"></div>
+    <div class="song-status" id="songStatus">曲目を選んでください</div>
+  </section>
+
+  <!-- タイル②：ストップウォッチ -->
+  <section class="tile">
+    <div class="tile-label">
+      <div class="tile-num">2</div>
+      <div class="tile-title">ストップウォッチ</div>
+    </div>
+    <div class="timer-display" id="timerDisplay">00:00</div>
+    <div class="btn-row">
+      <button class="big-btn btn-start" id="startBtn">スタート</button>
+      <button class="big-btn btn-stop" id="stopBtn" disabled>ストップ</button>
+    </div>
+    <div class="now-playing" id="nowPlaying">曲は再生されていません</div>
+  </section>
+
+  <footer>陳式太極研究会 &nbsp;|&nbsp; 演武練習用アプリ</footer>
+</div>
+
+<!-- YouTube 音声再生用（非表示） -->
+<div style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;">
+  <div id="ytPlayer"></div>
+</div>
+
+<script>
+  // ---- 曲目データ（YouTube動画ID）----
+  const songs = [
+    { name: "老架一路", videoId: "xXfuMibDbso" },
+    { name: "陳式剣",   videoId: "xXfuMibDbso" } // ※仮リンク（後で差し替え予定）
+  ];
+
+  let selectedIndex = 0;
+  let player = null;
+  let playerReady = false;
+
+  // ---- 曲リストの描画 ----
+  const songListEl = document.getElementById('songList');
+  const songStatusEl = document.getElementById('songStatus');
+  const nowPlayingEl = document.getElementById('nowPlaying');
+
+  function renderSongList(){
+    songListEl.innerHTML = '';
+    songs.forEach((song, i) => {
+      const item = document.createElement('div');
+      item.className = 'song-item' + (i === selectedIndex ? ' selected' : '');
+      item.innerHTML = `<div class="song-radio"></div><div class="song-name">${song.name}</div>`;
+      item.addEventListener('click', () => selectSong(i));
+      songListEl.appendChild(item);
+    });
+  }
+
+  function selectSong(i){
+    selectedIndex = i;
+    renderSongList();
+    songStatusEl.textContent = `選択中：${songs[i].name}`;
+    // 事前に読み込んでおく（まだ再生はしない）
+    if (playerReady && player && typeof player.cueVideoById === 'function') {
+      try { player.cueVideoById(songs[i].videoId); } catch(e) {}
+    }
+  }
+
+  renderSongList();
+  songStatusEl.textContent = `選択中：${songs[selectedIndex].name}`;
+
+  // ---- YouTube IFrame API ----
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
+
+  function onYouTubeIframeAPIReady(){
+    player = new YT.Player('ytPlayer', {
+      height: '1',
+      width: '1',
+      videoId: songs[selectedIndex].videoId,
+      playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
+      events: {
+        onReady: () => {
+          playerReady = true;
+          nowPlayingEl.textContent = '曲の準備ができました';
+        },
+        onError: (e) => {
+          nowPlayingEl.textContent = '動画の読み込みでエラーが発生しました(コード:' + e.data + ')';
+        }
+      }
+    });
+  }
+
+  // YouTube APIの読み込み自体に失敗した場合(file://で開いている等)の案内
+  setTimeout(() => {
+    if (!playerReady) {
+      nowPlayingEl.textContent = '曲の準備ができていません。インターネット上のURL(https://…)で開いているかご確認ください。';
+    }
+  }, 6000);
+
+  // ---- ストップウォッチ ----
+  const timerDisplayEl = document.getElementById('timerDisplay');
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+
+  let intervalId = null;
+  let startTimestamp = 0;
+  let elapsedMs = 0;
+
+  function formatTime(ms){
+    const totalSec = Math.floor(ms / 1000);
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+    const ss = String(totalSec % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function tick(){
+    const now = Date.now();
+    timerDisplayEl.textContent = formatTime(elapsedMs + (now - startTimestamp));
+  }
+
+  startBtn.addEventListener('click', () => {
+    // 曲を再生
+    if (player && playerReady) {
+      try {
+        player.loadVideoById(songs[selectedIndex].videoId);
+        player.playVideo();
+      } catch(e) {}
+    }
+    nowPlayingEl.innerHTML = `再生中：<strong>${songs[selectedIndex].name}</strong>`;
+
+    // タイマー開始（0からスタート）
+    elapsedMs = 0;
+    startTimestamp = Date.now();
+    timerDisplayEl.classList.add('running');
+    intervalId = setInterval(tick, 200);
+
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+  });
+
+  stopBtn.addEventListener('click', () => {
+    // 曲はそのまま流し続ける（何もしない）
+    // タイマーだけ停止
+    clearInterval(intervalId);
+    elapsedMs += Date.now() - startTimestamp;
+    timerDisplayEl.classList.remove('running');
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  });
+</script>
+
+</body>
+</html>
